@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat WS Vanilla</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        #chat { list-style: none; padding: 0; max-height: 300px; overflow-y: auto; }
+        #chat li { margin: 4px 0; }
+    </style>
+</head>
+<body>
+<h2>Chat en Tiempo Real (Java SE + javax.websocket)</h2>
+<button id="connectBtn">Conectar</button>
+<span id="status">Desconectado</span>
+<br><br>
+<input id="aliasInput" type="text" placeholder="Tu alias" />
+<button id="setAliasBtn">Definir Alias</button>
+<br><br>
+<ul id="chat"></ul>
+<input id="msgInput" type="text" placeholder="Escribe tu mensaje" disabled />
+<button id="sendBtn" disabled>Enviar</button>
+
+<script>
+    let socket;
+    let alias = "";
+
+    document.getElementById("setAliasBtn").onclick = function() {
+        const a = document.getElementById("aliasInput").value.trim();
+        if (a) {
+            alias = a;
+            document.getElementById("aliasInput").disabled = true;
+            this.disabled = true;
+            document.getElementById("status").textContent = "Alias definido: " + alias;
+        }
+    };
+
+    document.getElementById("connectBtn").onclick = function() {
+        if (!alias) {
+            alert("Primero define tu alias.");
+            return;
+        }
+        // Cambia puerto si lo has configurado distinto en ServerMain
+        socket = new WebSocket("ws://localhost:8025/chat");
+
+        socket.onopen = function() {
+            document.getElementById("status").textContent = "Conectado como " + alias;
+            document.getElementById("msgInput").disabled = false;
+            document.getElementById("sendBtn").disabled = false;
+            console.log("Conexión WebSocket abierta");
+        };
+
+        socket.onmessage = function(event) {
+            const msg = JSON.parse(event.data);
+            const li = document.createElement("li");
+            li.textContent = `[${msg.timestamp}] ${msg.sender}: ${msg.content}`;
+            document.getElementById("chat").appendChild(li);
+        };
+
+        socket.onclose = function() {
+            document.getElementById("status").textContent = "Desconectado";
+            document.getElementById("msgInput").disabled = true;
+            document.getElementById("sendBtn").disabled = true;
+            console.log("Conexión cerrada");
+        };
+
+        socket.onerror = function(err) {
+            console.error("WebSocket error:", err);
+        };
+    };
+
+    document.getElementById("sendBtn").onclick = function() {
+        const texto = document.getElementById("msgInput").value.trim();
+        if (!texto) return;
+        const msgObj = { sender: alias, content: texto };
+        socket.send(JSON.stringify(msgObj));
+        document.getElementById("msgInput").value = "";
+    };
+</script>
+</body>
+</html>
