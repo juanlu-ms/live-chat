@@ -406,6 +406,12 @@
             socket.onmessage = function(event) {
                 const msg = JSON.parse(event.data);
 
+                // Verificar si hay un error en el mensaje
+                if (msg.error) {
+                    alert("Error del servidor: " + msg.error);
+                    return;
+                }
+
                 // Solo mostrar mensajes de otros si no son del usuario actual
                 const messageType = msg.sender === alias ? 'sent' : 'received';
                 addMessage(msg, messageType);
