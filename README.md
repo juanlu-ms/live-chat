@@ -44,3 +44,11 @@ Esto inicia un servidor WebSocket en: ws://localhost:8025/chat
 
 Se puede utilizar el index.html proporcionado en la carpeta `src/main/resources` para probar el cliente WebSocket.
 Simplemente, abre el archivo en un navegador compatible con WebSockets.
+
+
+### Próximamente
+
+- Servidor HTTP para servir el cliente
+- Soporte para múltiples salas de chat
+- Persistencia de mensajes
+- Autenticación de usuarios
