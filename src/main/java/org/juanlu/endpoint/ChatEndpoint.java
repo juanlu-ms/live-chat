@@ -1,12 +1,13 @@
 package org.juanlu.endpoint;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.websocket.OnClose;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
 import org.juanlu.model.Message;
+import org.juanlu.util.MessageUtils;
+import org.juanlu.util.ValidationUtils;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -26,23 +27,11 @@ public class ChatEndpoint {
     private static final Set<Session> sessions = Collections.synchronizedSet(new HashSet<>());
 
     /**
-     * An ObjectMapper instance for JSON serialization and deserialization.
-     * This is used to convert Message objects to JSON strings and vice versa.
-     */
-    private static final ObjectMapper mapper = new ObjectMapper();
-
-    /**
-     * The maximum length of a message that can be sent or received.
-     * This is used to validate incoming messages and prevent excessively long messages.
-     */
-    private static final int MAX_MESSAGE_LENGTH = 1000;
-
-    /**
      * Sends an error message back to the client.
      * This method is used to inform the client about validation errors or processing issues.
      *
-     * @param session   The WebSocket session to send the error message to.
-     * @param errorMsg  The error message to send.
+     * @param session  The WebSocket session to send the error message to.
+     * @param errorMsg The error message to send.
      */
     private void sendError(Session session, String errorMsg) {
         try {
@@ -90,17 +79,16 @@ public class ChatEndpoint {
     public void onMessage(String messageJson, Session session) {
         try {
             // Validate the incoming message length
-            if (!validLength(messageJson)) {
+            if (!ValidationUtils.validLength(messageJson)) {
                 sendError(session, "Mensaje demasiado largo o vacío");
+                return;
             }
 
             // Deserialize the incoming message to a Message object
-            Message message = deserialize(messageJson, session);
-            if (message == null) return;
+            Message message = MessageUtils.deserialize(messageJson);
 
             // Validate the sender and content fields
-            if (message.getSender() == null || message.getSender().isEmpty() ||
-                    message.getContent() == null || message.getContent().isEmpty()) {
+            if (!ValidationUtils.validMessageFields(message)) {
                 sendError(session, "El remitente y el contenido no pueden estar vacíos");
                 return;
             }
@@ -109,60 +97,35 @@ public class ChatEndpoint {
             message.setTimestamp(LocalDateTime.now().toString());
 
             // Serialize the Message object back to JSON
-            String broadcastJson;
-            try {
-                broadcastJson = mapper.writeValueAsString(message);
-            } catch (IOException e) {
-                sendError(session, "Error al procesar el mensaje");
-                return;
-            }
+            String broadcastJson = MessageUtils.serialize(message);
 
             // Broadcast the message to all connected sessions
-            synchronized (sessions) {
-                for (Session s : sessions) {
-                    if (s.isOpen()) {
-                        try {
-                            s.getBasicRemote().sendText(broadcastJson);
-                        } catch (IOException e) {
-                            Logger.getLogger(ChatEndpoint.class.getName()).log(Level.SEVERE,
-                                    "Error while sending message to session: " + s.getId(), e);
-                        }
-                    }
-                }
-            }
+            broadcastMessage(broadcastJson);
+
         } catch (Exception e) {
             Logger.getLogger(ChatEndpoint.class.getName()).log(Level.SEVERE,
                     "Error while processing message", e);
+            sendError(session, "Error al procesar el mensaje");
         }
     }
 
     /**
-     * Deserializes a JSON string into a Message object.
-     * If deserialization fails, an error message is sent back to the client.
+     * Broadcasts a JSON message to all connected WebSocket sessions.
      *
-     * @param messageJson The JSON string representing the incoming message.
-     * @param session     The WebSocket session from which the message was received.
-     * @return The deserialized Message object, or null if deserialization failed.
+     * @param broadcastJson The JSON string to broadcast.
      */
-    private Message deserialize(String messageJson, Session session) {
-        Message message;
-        try {
-            message = mapper.readValue(messageJson, Message.class);
-        } catch (IOException e) {
-            sendError(session, "Formato de mensaje inválido");
-            return null;
+    private static void broadcastMessage(String broadcastJson) {
+        synchronized (sessions) {
+            for (Session s : sessions) {
+                if (s.isOpen()) {
+                    try {
+                        s.getBasicRemote().sendText(broadcastJson);
+                    } catch (IOException e) {
+                        Logger.getLogger(ChatEndpoint.class.getName()).log(Level.SEVERE,
+                                "Error while sending message to session: " + s.getId(), e);
+                    }
+                }
+            }
         }
-        return message;
-    }
-
-    /**
-     * Validates the length of the incoming message.
-     * The message must not be null and must not exceed the maximum allowed length.
-     *
-     * @param messageJson The JSON string representing the incoming message.
-     * @return true if the message is valid, false otherwise.
-     */
-    private boolean validLength(String messageJson) {
-        return !(messageJson == null || messageJson.length() > MAX_MESSAGE_LENGTH);
     }
 }
