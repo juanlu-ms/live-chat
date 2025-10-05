@@ -50,7 +50,8 @@ public class ChatEndpoint {
                     "{\"error\":\"" + errorMsg.replace("\"", "\\\"") + "\"}"
             );
         } catch (IOException e) {
-            Logger.getLogger(ChatEndpoint.class.getName()).log(Level.SEVERE, "Error while sending error message", e);
+            Logger.getLogger(ChatEndpoint.class.getName()).log(Level.SEVERE,
+                    "Error while sending error message", e);
         }
     }
 
@@ -123,16 +124,26 @@ public class ChatEndpoint {
                         try {
                             s.getBasicRemote().sendText(broadcastJson);
                         } catch (IOException e) {
-                            Logger.getLogger(ChatEndpoint.class.getName()).log(Level.SEVERE, "Error while sending message to session: " + s.getId(), e);
+                            Logger.getLogger(ChatEndpoint.class.getName()).log(Level.SEVERE,
+                                    "Error while sending message to session: " + s.getId(), e);
                         }
                     }
                 }
             }
         } catch (Exception e) {
-            Logger.getLogger(ChatEndpoint.class.getName()).log(Level.SEVERE, "Error while processing message", e);
+            Logger.getLogger(ChatEndpoint.class.getName()).log(Level.SEVERE,
+                    "Error while processing message", e);
         }
     }
 
+    /**
+     * Deserializes a JSON string into a Message object.
+     * If deserialization fails, an error message is sent back to the client.
+     *
+     * @param messageJson The JSON string representing the incoming message.
+     * @param session     The WebSocket session from which the message was received.
+     * @return The deserialized Message object, or null if deserialization failed.
+     */
     private Message deserialize(String messageJson, Session session) {
         Message message;
         try {
