@@ -53,7 +53,8 @@ public class ChatEndpoint {
     @OnOpen
     public void onOpen(Session session) {
         sessions.add(session);
-        System.out.println("New session opened: " + session.getId());
+        Logger.getLogger(ChatEndpoint.class.getName()).log(Level.INFO,
+                "New session opened: " + session.getId());
     }
 
     /**
@@ -65,7 +66,8 @@ public class ChatEndpoint {
     @OnClose
     public void onClose(Session session) {
         sessions.remove(session);
-        System.out.println("Session closed: " + session.getId());
+        Logger.getLogger(ChatEndpoint.class.getName()).log(Level.INFO,
+                "Session closed: " + session.getId());
     }
 
     /**
