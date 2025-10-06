@@ -21,6 +21,11 @@ import java.util.logging.Logger;
 public class ChatEndpoint {
 
     /**
+     * Logger for the endpoint.
+     */
+    private static final Logger LOGGER = Logger.getLogger(ChatEndpoint.class.getName());
+
+    /**
      * A set to keep track of all active WebSocket sessions.
      * This allows us to broadcast messages to all connected clients.
      */
@@ -39,8 +44,7 @@ public class ChatEndpoint {
                     "{\"error\":\"" + errorMsg.replace("\"", "\\\"") + "\"}"
             );
         } catch (IOException e) {
-            Logger.getLogger(ChatEndpoint.class.getName()).log(Level.SEVERE,
-                    "Error while sending error message", e);
+            LOGGER.log(Level.SEVERE, "Error while sending error message", e);
         }
     }
 
@@ -53,8 +57,7 @@ public class ChatEndpoint {
     @OnOpen
     public void onOpen(Session session) {
         sessions.add(session);
-        Logger.getLogger(ChatEndpoint.class.getName()).log(Level.INFO,
-                "New session opened: " + session.getId());
+        LOGGER.log(Level.INFO, "New session opened: " + session.getId());
     }
 
     /**
@@ -66,8 +69,7 @@ public class ChatEndpoint {
     @OnClose
     public void onClose(Session session) {
         sessions.remove(session);
-        Logger.getLogger(ChatEndpoint.class.getName()).log(Level.INFO,
-                "Session closed: " + session.getId());
+        LOGGER.log(Level.INFO, "Session closed: " + session.getId());
     }
 
     /**
@@ -105,8 +107,7 @@ public class ChatEndpoint {
             broadcastMessage(broadcastJson);
 
         } catch (Exception e) {
-            Logger.getLogger(ChatEndpoint.class.getName()).log(Level.SEVERE,
-                    "Error while processing message", e);
+            LOGGER.log(Level.SEVERE, "Error while processing message", e);
             sendError(session, "Error al procesar el mensaje");
         }
     }
@@ -123,8 +124,7 @@ public class ChatEndpoint {
                     try {
                         s.getBasicRemote().sendText(broadcastJson);
                     } catch (IOException e) {
-                        Logger.getLogger(ChatEndpoint.class.getName()).log(Level.SEVERE,
-                                "Error while sending message to session: " + s.getId(), e);
+                        LOGGER.log(Level.SEVERE, "Error while sending message to session: " + s.getId(), e);
                     }
                 }
             }
